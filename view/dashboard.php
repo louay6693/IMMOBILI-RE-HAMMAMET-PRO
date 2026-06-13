@@ -410,7 +410,7 @@ let allMaisons = [];
 
 async function loadMaisons() {
   try {
-    const res = await fetch('../controller/MaisonController.php');
+    const res = await fetch('/controller/MaisonController.php');
     const json = await res.json();
     if (json.success) {
       allMaisons = json.data;
@@ -551,7 +551,7 @@ async function submitMaison() {
   Array.from(photos).forEach(file => formData.append('photos[]', file));
 
   try {
-    const res = await fetch('../cloudinary/upload_photo.php', {
+    const res = await fetch('/cloudinary/upload_photo.php', {
       method: 'POST',
       body: formData
     });
@@ -577,7 +577,7 @@ async function submitMaison() {
 // =====================
 async function deleteMaison(id, nom) {
   if (!confirm(`Supprimer "${nom}" ?`)) return;
-  const res = await fetch(`../controller/MaisonController.php?action=delete&id=${id}`, { method: 'DELETE' });
+  const res = await fetch(`/controller/MaisonController.php?action=delete&id=${id}`, { method: 'DELETE' });
   const json = await res.json();
   if (json.success) loadMaisons();
   else alert('Erreur lors de la suppression');
@@ -661,7 +661,7 @@ if (m.photo_url) {
     </div>`;
   
   // Charger toutes les photos de cette maison
-  fetch('../cloudinary/get_photos.php?maison_id=' + m.id)
+  fetch('/cloudinary/get_photos.php?maison_id=' + m.id)
     .then(r => r.json())
     .then(data => {
       if (data.success) {
@@ -761,7 +761,7 @@ async function submitEdit() {
   Array.from(photos).forEach(file => formData.append('photos[]', file));
 
   try {
-    const res = await fetch('../cloudinary/update_maison.php', {
+    const res = await fetch('/cloudinary/update_maison.php', {
       method: 'POST',
       body: formData
     });
@@ -789,7 +789,7 @@ function showEditMsg(text, type) {
 
 async function deletePhoto(photoId, btn) {
   if (!confirm('Supprimer cette photo ?')) return;
-  const res = await fetch('../cloudinary/delete_photo.php', {
+  const res = await fetch('/cloudinary/delete_photo.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id: photoId })
