@@ -1,10 +1,10 @@
 <?php
-$host     = getenv('DB_HOST')     ?: "ep-patient-glade-asfalp0w.c-4.eu-central-1.aws.neon.tech";
-$dbname   = getenv('DB_NAME')     ?: "neondb";
-$user     = getenv('DB_USER')     ?: "neondb_owner";
-$password = getenv('DB_PASSWORD') ?: "npg_IAa7hgJKbT5x";
-$port     = getenv('DB_PORT')     ?: "5432";
-$endpoint = getenv('DB_ENDPOINT') ?: "ep-patient-glade-asfalp0w";
+$host     = getenv('DB_HOST');
+$dbname   = getenv('DB_NAME');
+$user     = getenv('DB_USER');
+$password = getenv('DB_PASSWORD');
+$port     = getenv('DB_PORT');
+$endpoint = getenv('DB_ENDPOINT');
 
 try {
     $pdo = new PDO(
