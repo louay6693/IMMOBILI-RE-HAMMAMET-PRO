@@ -169,6 +169,76 @@ if (!isset($_SESSION['admin'])) {
     #form-msg { margin-top: 12px; padding: 10px 14px; border-radius: 8px; font-size: 14px; display: none; }
     .msg-ok { background: #e6f9f0; color: #1a8a5a; display: block !important; }
     .msg-err { background: #fde8e8; color: #c0392b; display: block !important; }
+
+    /* ✅ Styles drag & drop ordre photos */
+    .photos-ordre-grid {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+    }
+    .photo-ordre-item {
+      position: relative; width: 90px; cursor: grab;
+      border-radius: 10px; overflow: hidden;
+      border: 2px solid #e0e0e0; background: #f9f9f9;
+      transition: box-shadow 0.2s;
+    }
+    .photo-ordre-item:active { cursor: grabbing; }
+    .photo-ordre-item.sortable-ghost  { opacity: 0.3; border-color: #f5576c; }
+    .photo-ordre-item.sortable-chosen { box-shadow: 0 6px 20px rgba(48,43,99,0.35); transform: scale(1.05); }
+    .photo-ordre-item img { width: 100%; height: 64px; object-fit: cover; display: block; pointer-events: none; }
+    .photo-ordre-num {
+      position: absolute; top: 4px; left: 4px;
+      background: #302b63; color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 8px;
+    }
+    .photo-ordre-del {
+      position: absolute; top: 3px; right: 3px;
+      background: #f5576c; color: #fff; border: none;
+      border-radius: 50%; width: 18px; height: 18px;
+      font-size: 10px; cursor: pointer; line-height: 18px;
+      text-align: center; padding: 0;
+    }
+    .drag-label {
+      text-align: center; font-size: 10px; color: #aaa; padding: 3px 0;
+    }
+    .btn-save-ordre {
+      margin-top: 10px; padding: 8px 18px;
+      background: linear-gradient(135deg, #302b63, #0f0c29);
+      color: #fff; border: none; border-radius: 8px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity 0.2s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-save-ordre:hover { opacity: 0.85; }
+    .btn-save-ordre:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ordre-feedback {
+      display: inline-block; margin-left: 10px;
+      font-size: 12px; font-weight: 600;
+      padding: 5px 12px; border-radius: 20px;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .ordre-feedback.show { opacity: 1; }
+    .ordre-feedback.ok  { background: #e6f9f0; color: #1a8a5a; }
+    .ordre-feedback.err { background: #fde8e8; color: #c0392b; }
+
+    /* ✅ Styles upload zone modal ajouter — ordre preview */
+    .preview-add-item {
+      position: relative; width: 90px; cursor: grab;
+      border-radius: 10px; overflow: hidden;
+      border: 2px solid #e0e0e0; background: #f9f9f9;
+    }
+    .preview-add-item img { width: 100%; height: 64px; object-fit: cover; display: block; }
+    .preview-add-num {
+      position: absolute; top: 4px; left: 4px;
+      background: #f093fb; color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 1px 6px; border-radius: 8px;
+    }
+    .preview-add-del {
+      position: absolute; top: 3px; right: 3px;
+      background: #f5576c; color: #fff; border: none;
+      border-radius: 50%; width: 18px; height: 18px;
+      font-size: 10px; cursor: pointer; line-height: 18px;
+      text-align: center; padding: 0;
+    }
   </style>
 </head>
 <body>
@@ -274,10 +344,14 @@ if (!isset($_SESSION['admin'])) {
         <div class="upload-zone" onclick="document.getElementById('f-photos').click()">
           <div style="font-size:36px">📸</div>
           <p>Cliquez pour ajouter des photos</p>
-          <p style="font-size:12px;color:#bbb">JPG, PNG — plusieurs photos possibles</p>
+          <p style="font-size:12px;color:#bbb">JPG, PNG — glissez pour réordonner après sélection</p>
           <input type="file" id="f-photos" multiple accept="image/*" onchange="previewPhotos(this)">
         </div>
-        <div class="preview-imgs" id="preview-imgs"></div>
+        <!-- ✅ Preview avec drag & drop pour définir l'ordre avant upload -->
+        <div id="preview-imgs" class="photos-ordre-grid" style="margin-top:12px;"></div>
+        <div id="add-ordre-hint" style="display:none;font-size:12px;color:#888;margin-top:6px;">
+          ☝️ Glissez les photos pour définir leur ordre d'affichage
+        </div>
       </div>
     </div>
     <button class="btn-submit" id="btn-submit" onclick="submitMaison()">🏠 Enregistrer la maison</button>
@@ -333,6 +407,19 @@ if (!isset($_SESSION['admin'])) {
         <label>Description</label>
         <textarea id="e-desc"></textarea>
       </div>
+
+      <!-- ✅ Section photos existantes avec drag & drop ordre -->
+      <div class="form-group form-full" id="existing-photos-section" style="display:none;">
+        <label>🔀 Photos existantes — glissez pour réordonner</label>
+        <div id="photos-ordre-grid" class="photos-ordre-grid"></div>
+        <div style="margin-top:10px;">
+          <button class="btn-save-ordre" id="btn-save-ordre" onclick="sauvegarderOrdre()">
+            💾 Sauvegarder l'ordre
+          </button>
+          <span class="ordre-feedback" id="ordre-feedback"></span>
+        </div>
+      </div>
+
       <div class="form-group form-full">
         <label>Ajouter nouvelles photos</label>
         <div class="upload-zone" onclick="document.getElementById('e-photos').click()">
@@ -348,14 +435,15 @@ if (!isset($_SESSION['admin'])) {
   </div>
 </div>
 
+<!-- ✅ SortableJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+
 <script>
-// =====================
-// BASE URL — works on localhost AND Render
-// =====================
 const BASE = window.location.hostname === 'localhost' ? '..' : '';
 
 let allMaisons = [];
 
+// ─── TABLE ───────────────────────────────────────────────────────────────────
 async function loadMaisons() {
   try {
     const res = await fetch(BASE + '/controller/MaisonController.php');
@@ -429,6 +517,7 @@ function applyFilters() {
   document.getElementById(id).addEventListener('input', applyFilters);
 });
 
+// ─── MODAL AJOUTER ───────────────────────────────────────────────────────────
 function openModal() {
   document.getElementById('modal').classList.add('active');
   initMap();
@@ -438,24 +527,73 @@ function closeModal() {
   document.getElementById('form-msg').className = '';
   document.getElementById('form-msg').textContent = '';
   document.getElementById('preview-imgs').innerHTML = '';
+  document.getElementById('add-ordre-hint').style.display = 'none';
   document.getElementById('f-photos').value = '';
   ['f-nom','f-prix','f-chambres','f-toilettes','f-lat','f-lng','f-desc'].forEach(id => {
     document.getElementById(id).value = '';
   });
+  addSortable = null;
+  addFiles = [];
 }
 
+// ✅ Drag & drop pour les photos dans la modal "Ajouter"
+let addSortable = null;
+let addFiles    = [];   // on garde les File objects dans l'ordre voulu
+
 function previewPhotos(input) {
+  addFiles = Array.from(input.files);
+  renderAddPreview();
+}
+
+function renderAddPreview() {
   const preview = document.getElementById('preview-imgs');
+  const hint    = document.getElementById('add-ordre-hint');
   preview.innerHTML = '';
-  Array.from(input.files).forEach(file => {
+
+  if (!addFiles.length) { hint.style.display = 'none'; return; }
+  hint.style.display = addFiles.length > 1 ? 'block' : 'none';
+
+  addFiles.forEach((file, i) => {
     const reader = new FileReader();
     reader.onload = e => {
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      preview.appendChild(img);
+      const div = document.createElement('div');
+      div.className = 'preview-add-item';
+      div.dataset.index = i;
+      div.innerHTML = `
+        <img src="${e.target.result}" alt="">
+        <span class="preview-add-num">${i + 1}</span>
+        <button class="preview-add-del" onclick="removeAddFile(${i})">✕</button>
+        <div class="drag-label">☰</div>
+      `;
+      preview.appendChild(div);
+      // Re-init Sortable après chaque ajout (simple, fonctionne)
+      if (addSortable) { addSortable.destroy(); addSortable = null; }
+      if (addFiles.length > 1) {
+        addSortable = Sortable.create(preview, {
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          chosenClass: 'sortable-chosen',
+          onEnd: () => {
+            // Réordonner addFiles selon le nouvel ordre DOM
+            const items = preview.querySelectorAll('.preview-add-item');
+            const newOrder = Array.from(items).map(el => addFiles[parseInt(el.dataset.index)]);
+            addFiles = newOrder;
+            // Mettre à jour les indices et badges
+            items.forEach((el, idx) => {
+              el.dataset.index = idx;
+              el.querySelector('.preview-add-num').textContent = idx + 1;
+            });
+          }
+        });
+      }
     };
     reader.readAsDataURL(file);
   });
+}
+
+function removeAddFile(index) {
+  addFiles.splice(index, 1);
+  renderAddPreview();
 }
 
 async function submitMaison() {
@@ -470,6 +608,7 @@ async function submitMaison() {
   const btn = document.getElementById('btn-submit');
   btn.disabled = true;
   btn.textContent = '⏳ Enregistrement...';
+
   const formData = new FormData();
   formData.append('nom', nom);
   formData.append('prix', prix);
@@ -479,8 +618,10 @@ async function submitMaison() {
   formData.append('latitude', document.getElementById('f-lat').value);
   formData.append('longitude', document.getElementById('f-lng').value);
   formData.append('description', document.getElementById('f-desc').value);
-  const photos = document.getElementById('f-photos').files;
-  Array.from(photos).forEach(file => formData.append('photos[]', file));
+
+  // ✅ On envoie les photos dans l'ordre voulu par l'utilisateur
+  addFiles.forEach(file => formData.append('photos[]', file));
+
   try {
     const res = await fetch(BASE + '/cloudinary/upload_photo.php', { method: 'POST', body: formData });
     const json = await res.json();
@@ -511,14 +652,13 @@ function showMsg(text, type) {
   el.textContent = text;
   el.className = type === 'ok' ? 'msg-ok' : 'msg-err';
 }
-
 function showEditMsg(text, type) {
   const el = document.getElementById('edit-msg');
   el.textContent = text;
   el.className = type === 'ok' ? 'msg-ok' : 'msg-err';
 }
 
-// MAP AJOUTER
+// ─── MAP AJOUTER ─────────────────────────────────────────────────────────────
 let map, marker;
 function initMap() {
   if (map) return;
@@ -537,8 +677,9 @@ function initMap() {
   }, 200);
 }
 
-// MAP MODIFIER
+// ─── MODAL MODIFIER ──────────────────────────────────────────────────────────
 let mapEdit, markerEdit;
+let editSortable = null;
 
 function editMaison(id) {
   const m = allMaisons.find(x => x.id === id);
@@ -557,26 +698,50 @@ function editMaison(id) {
     ? `📍 <strong>Lat:</strong> ${m.latitude} &nbsp;|&nbsp; <strong>Lng:</strong> ${m.longitude}`
     : 'Aucune position';
   document.getElementById('preview-edit-imgs').innerHTML = '';
-  if (m.photo_url) {
-    const preview = document.getElementById('preview-edit-imgs');
-    preview.innerHTML = `<div style="width:100%;font-size:12px;color:#888;margin-bottom:6px">Photos actuelles :</div>`;
-    fetch(BASE + '/cloudinary/get_photos.php?maison_id=' + m.id)
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          data.photos.forEach(p => {
-            const div = document.createElement('div');
-            div.style.cssText = 'position:relative;display:inline-block';
-            div.innerHTML = `
-              <img src="${p.url}" style="width:80px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #e0e0e0">
-              <button onclick="deletePhoto(${p.id}, this)" style="position:absolute;top:-6px;right:-6px;background:#f5576c;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;line-height:20px">✕</button>
-            `;
-            preview.appendChild(div);
+  document.getElementById('edit-msg').className = '';
+
+  // ✅ Charger les photos existantes avec drag & drop ordre
+  const section = document.getElementById('existing-photos-section');
+  const grid    = document.getElementById('photos-ordre-grid');
+  grid.innerHTML = '<span style="color:#aaa;font-size:13px">Chargement...</span>';
+  section.style.display = 'block';
+
+  fetch(BASE + '/cloudinary/get_photos.php?maison_id=' + m.id)
+    .then(r => r.json())
+    .then(data => {
+      grid.innerHTML = '';
+      if (!data.success || !data.photos.length) {
+        section.style.display = 'none';
+        return;
+      }
+      data.photos.forEach((p, i) => {
+        const div = document.createElement('div');
+        div.className = 'photo-ordre-item';
+        div.dataset.id = p.id;
+        div.innerHTML = `
+          <img src="${p.url}" alt="photo ${i+1}">
+          <span class="photo-ordre-num">${i + 1}</span>
+          <button class="photo-ordre-del" onclick="deletePhoto(${p.id}, this)">✕</button>
+          <div class="drag-label">☰ glisser</div>
+        `;
+        grid.appendChild(div);
+      });
+
+      // ✅ Init SortableJS sur la grille des photos existantes
+      if (editSortable) { editSortable.destroy(); editSortable = null; }
+      editSortable = Sortable.create(grid, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: () => {
+          // Mettre à jour les numéros visuels
+          grid.querySelectorAll('.photo-ordre-item').forEach((el, idx) => {
+            el.querySelector('.photo-ordre-num').textContent = idx + 1;
           });
         }
       });
-  }
-  document.getElementById('edit-msg').className = '';
+    });
+
   document.getElementById('modal-edit').classList.add('active');
   setTimeout(() => {
     if (!mapEdit) {
@@ -603,10 +768,45 @@ function editMaison(id) {
   }, 250);
 }
 
+// ✅ Sauvegarder l'ordre des photos existantes (modal Modifier)
+async function sauvegarderOrdre() {
+  const btn      = document.getElementById('btn-save-ordre');
+  const feedback = document.getElementById('ordre-feedback');
+  btn.disabled   = true;
+  btn.textContent = '⏳...';
+
+  const items  = document.querySelectorAll('#photos-ordre-grid .photo-ordre-item');
+  const photos = Array.from(items).map((el, i) => ({
+    id: parseInt(el.dataset.id),
+    ordre: i
+  }));
+
+  try {
+    const res  = await fetch(BASE + '/cloudinary/update_ordre.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photos })
+    });
+    const data = await res.json();
+    feedback.className = 'ordre-feedback show ' + (data.success ? 'ok' : 'err');
+    feedback.textContent = data.success ? '✅ Ordre sauvegardé !' : '❌ ' + (data.error || 'Erreur');
+  } catch (e) {
+    feedback.className = 'ordre-feedback show err';
+    feedback.textContent = '❌ Erreur réseau';
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 Sauvegarder l\'ordre';
+  setTimeout(() => { feedback.className = 'ordre-feedback'; }, 3000);
+}
+
 function closeEditModal() {
   document.getElementById('modal-edit').classList.remove('active');
   document.getElementById('e-photos').value = '';
   document.getElementById('preview-edit-imgs').innerHTML = '';
+  document.getElementById('photos-ordre-grid').innerHTML = '';
+  document.getElementById('existing-photos-section').style.display = 'none';
+  if (editSortable) { editSortable.destroy(); editSortable = null; }
 }
 
 function previewEditPhotos(input) {
@@ -636,6 +836,7 @@ async function submitEdit() {
   const btn = document.getElementById('btn-edit-submit');
   btn.disabled = true;
   btn.textContent = '⏳ Sauvegarde...';
+
   const formData = new FormData();
   formData.append('id', id);
   formData.append('nom', nom);
@@ -649,6 +850,7 @@ async function submitEdit() {
   formData.append('description', document.getElementById('e-desc').value);
   const photos = document.getElementById('e-photos').files;
   Array.from(photos).forEach(file => formData.append('photos[]', file));
+
   try {
     const res = await fetch(BASE + '/cloudinary/update_maison.php', { method: 'POST', body: formData });
     const json = await res.json();
@@ -674,8 +876,15 @@ async function deletePhoto(photoId, btn) {
     body: JSON.stringify({ id: photoId })
   });
   const json = await res.json();
-  if (json.success) btn.parentElement.remove();
-  else alert('Erreur suppression photo');
+  if (json.success) {
+    btn.parentElement.remove();
+    // Mettre à jour les numéros après suppression
+    document.querySelectorAll('#photos-ordre-grid .photo-ordre-item').forEach((el, i) => {
+      el.querySelector('.photo-ordre-num').textContent = i + 1;
+    });
+  } else {
+    alert('Erreur suppression photo');
+  }
 }
 
 // INIT

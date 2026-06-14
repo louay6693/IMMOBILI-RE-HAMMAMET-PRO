@@ -1161,9 +1161,9 @@ $img3_b64 = file_exists(__DIR__ . '/data/3.jpg') ? base64_encode(file_get_conten
       <img src="data:image/png;base64,<?= $logo_b64 ?>" alt="logo">
       <p style="margin-top:12px;" data-i18n="footer_about">Agence d'excellence depuis 2015, plus de 300 transactions en bord de mer.</p>
       <div class="social-links">
-        <a href="#" class="social-icon">f</a>
-        <a href="#" class="social-icon">in</a>
-        <a href="#" class="social-icon">W</a>
+        <a href="https://www.facebook.com/hammamet.immobiliere.2025" class="social-icon">f</a>
+        <a href="https://www.facebook.com/hammamet.immobiliere.2025" class="social-icon">in</a>
+        <a href="https://www.facebook.com/hammamet.immobiliere.2025" class="social-icon">W</a>
       </div>
     </div>
     <div class="footer-col">

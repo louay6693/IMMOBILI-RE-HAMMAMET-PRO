@@ -8,7 +8,9 @@ if (!$maison_id) {
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT id, url, ordre FROM photos_maison WHERE maison_id = ? ORDER BY ordre ASC");
+$stmt = $pdo->prepare(
+    "SELECT * FROM photos_maison WHERE maison_id = :id ORDER BY ordre ASC"
+);
 $stmt->execute([$maison_id]);
 $photos = $stmt->fetchAll();
 
